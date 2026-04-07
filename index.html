@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ELL880A — Assignment 3 | Sales Data Visualizations</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink: #1c1c1c;
+      --ink-mid: #4a4540;
+      --ink-light: #7a756f;
+      --paper: #f8f4ef;
+      --paper-warm: #efe9e1;
+      --rule: #c8bfb4;
+      --accent: #7b3f1e;
+      --accent-light: #f0e6df;
+      --accent2: #1e4a5c;
+      --serif: 'EB Garamond', Georgia, serif;
+      --sans: 'Source Sans 3', system-ui, sans-serif;
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--paper);
+      color: var(--ink);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    /* ── MASTHEAD ── */
+    .masthead {
+      background: var(--ink);
+      color: var(--paper);
+      padding: 0;
+      border-bottom: 3px solid var(--accent);
+    }
+    .masthead-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 36px 28px 28px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: end;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+    }
+    .masthead h1 {
+      font-family: var(--serif);
+      font-size: 2.4rem;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      line-height: 1.15;
+      color: #f0ebe4;
+    }
+    .masthead h1 span {
+      color: #c47a50;
+    }
+    .masthead-meta {
+      text-align: right;
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.45);
+      font-family: var(--sans);
+      letter-spacing: 0.3px;
+    }
+    .masthead-meta strong {
+      display: block;
+      color: rgba(255,255,255,0.75);
+      font-size: 0.88rem;
+      margin-bottom: 2px;
+    }
+
+    /* ── NAV BAR ── */
+    .toc-bar {
+      background: var(--ink);
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .toc-bar nav {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 28px;
+      display: flex;
+      gap: 0;
+    }
+    .toc-bar a {
+      display: block;
+      padding: 11px 18px;
+      font-size: 0.78rem;
+      font-family: var(--sans);
+      font-weight: 600;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.5);
+      text-decoration: none;
+      border-right: 1px solid rgba(255,255,255,0.08);
+      transition: color 0.18s, background 0.18s;
+    }
+    .toc-bar a:first-child { border-left: 1px solid rgba(255,255,255,0.08); }
+    .toc-bar a:hover {
+      color: #f0ebe4;
+      background: rgba(255,255,255,0.05);
+    }
+
+    /* ── DATASET STRIP ── */
+    .dataset-strip {
+      max-width: 960px;
+      margin: 24px auto 0;
+      padding: 14px 20px;
+      background: var(--accent-light);
+      border-left: 3px solid var(--accent);
+      font-size: 0.82rem;
+      color: var(--ink-mid);
+      font-family: var(--sans);
+    }
+    .dataset-strip strong { color: var(--accent); }
+
+    /* ── MAIN CONTENT ── */
+    .content {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 28px 60px;
+    }
+
+    /* ── CHART SECTION ── */
+    .chart-section {
+      margin-top: 40px;
+      border-top: 2px solid var(--ink);
+    }
+    .chart-header {
+      padding: 18px 0 14px;
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+    }
+    .chart-num {
+      font-family: var(--serif);
+      font-size: 1.05rem;
+      font-style: italic;
+      color: var(--accent);
+      min-width: 24px;
+    }
+    .chart-title {
+      font-family: var(--serif);
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: var(--ink);
+      line-height: 1.2;
+    }
+    .chart-caption {
+      font-size: 0.82rem;
+      color: var(--ink-light);
+      margin-top: 4px;
+      margin-bottom: 18px;
+      padding-left: 40px;
+      font-style: italic;
+      border-left: none;
+    }
+    .vega-chart {
+      display: flex;
+      justify-content: center;
+      background: #ffffff;
+      border: 1px solid var(--rule);
+      padding: 24px 16px;
+    }
+    .vega-embed { width: 100%; }
+    .vega-embed summary { opacity: 0.35; }
+
+    /* ── MULTIVIEW SECTION ── */
+    .section-all {
+      margin-top: 48px;
+      border-top: 3px double var(--ink);
+    }
+    .section-all .chart-header {
+      padding: 20px 0 16px;
+    }
+    .section-all .chart-title {
+      font-size: 1.5rem;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 2px solid var(--ink);
+      margin-top: 48px;
+      padding: 20px 28px;
+      max-width: 960px;
+      margin-left: auto;
+      margin-right: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+      color: var(--ink-light);
+      font-family: var(--sans);
+      letter-spacing: 0.3px;
+    }
+    footer span { font-family: var(--serif); font-style: italic; }
+  </style>
+</head>
+<body>
+
+  <header class="masthead">
+    <div class="masthead-inner">
+      <div>
+        <h1>ELL880A &nbsp;<span>·</span>&nbsp; Assignment&nbsp;3</h1>
+        <p style="margin-top:8px; font-size:0.88rem; color:rgba(255,255,255,0.5); font-family:var(--sans); letter-spacing:0.3px;">Visualizing Sales Tables with Vega-Lite</p>
+      </div>
+      <div class="masthead-meta">
+        <strong>Pawan Kumar</strong>
+        2024EET2379<br>
+      </div>
+    </div>
+    <nav class="toc-bar" style="background:transparent;">
+      <nav style="max-width:960px;margin:0 auto;padding:0 28px;display:flex;gap:0;">
+        <a href="#sec1">I. Donut</a>
+        <a href="#sec2">II. Streamgraph</a>
+        <a href="#sec3">III. Histogram</a>
+        <a href="#sec4">IV. Heatmap</a>
+        <a href="#sec5">V. Linked Brush</a>
+        <a href="#secAll">All Views</a>
+      </nav>
+    </nav>
+  </header>
+
+  <div class="content">
+
+    <div class="dataset-strip">
+      <strong>Dataset:</strong> HW_III.xlsx (Given) &ensp;—&ensp;
+      43 sales orders · Jan 2021 – Dec 2022 &ensp;|&ensp;
+      <strong>Fields:</strong> OrderDate, Region, Rep, Item, Units, Unit Cost, Total &ensp;|&ensp;
+      <strong>Tool:</strong> Vega-Lite v5, five interactive views assembled into one multiview specification
+    </div>
+
+    <!-- I. Donut -->
+    <section class="chart-section" id="sec1">
+      <div class="chart-header">
+        <span class="chart-num">I.</span>
+        <h2 class="chart-title">Donut Chart — Total Sales by Representative</h2>
+      </div>
+      <p class="chart-caption">Proportion of revenue attributable to each sales representative. Hover a slice to inspect the exact figure.</p>
+      <div class="vega-chart" id="vis1"></div>
+    </section>
+
+    <!-- II. Streamgraph -->
+    <section class="chart-section" id="sec2">
+      <div class="chart-header">
+        <span class="chart-num">II.</span>
+        <h2 class="chart-title">Streamgraph — Monthly Sales by Product</h2>
+      </div>
+      <p class="chart-caption">Symmetrically stacked area (stack: center) tracing each product's revenue contribution across the two-year window. Hover for exact month and amount.</p>
+      <div class="vega-chart" id="vis2"></div>
+    </section>
+
+    <!-- III. Trellis Histogram -->
+    <section class="chart-section" id="sec3">
+      <div class="chart-header">
+        <span class="chart-num">III.</span>
+        <h2 class="chart-title">Trellis Histogram — Units Sold Distribution per Item</h2>
+      </div>
+      <p class="chart-caption">Faceted frequency histograms, one panel per product category. A dashed vertical rule marks the mean unit volume for each panel.</p>
+      <div class="vega-chart" id="vis3"></div>
+    </section>
+
+    <!-- IV. Heatmap -->
+    <section class="chart-section" id="sec4">
+      <div class="chart-header">
+        <span class="chart-num">IV.</span>
+        <h2 class="chart-title">Interactive Heatmap — Revenue by Representative × Product</h2>
+      </div>
+      <p class="chart-caption">Click any row to isolate a sales representative; remaining rows fade. Colour intensity encodes total revenue. Hover a cell for a full breakdown.</p>
+      <div class="vega-chart" id="vis4"></div>
+    </section>
+
+    <!-- V. Linked Brush -->
+    <section class="chart-section" id="sec5">
+      <div class="chart-header">
+        <span class="chart-num">V.</span>
+        <h2 class="chart-title">Linked Brush — Monthly Totals → Per-Representative Breakdown</h2>
+      </div>
+      <p class="chart-caption">Drag a selection across the upper bar chart to define a date window; the lower chart immediately refilters to show only the representatives active in that period.</p>
+      <div class="vega-chart" id="vis5"></div>
+    </section>
+
+    <!-- All Views -->
+    <section class="chart-section section-all" id="secAll">
+      <div class="chart-header">
+        <span class="chart-num" style="font-size:1.2rem;">§</span>
+        <h2 class="chart-title">Multiview — All Five Charts in a Single Vega-Lite Specification</h2>
+      </div>
+      <p class="chart-caption">The five views above concatenated via <code>vconcat</code> into one self-contained Vega-Lite specification, as required by the assignment.</p>
+      <div class="vega-chart" id="visAll"></div>
+    </section>
+
+  </div><!-- /content -->
+
+  <footer>
+    <span>ELL880A · Visualization · Assignment 3 · Vega-Lite Multiview</span>
+    <span>Pawan Kumar · 2024EET2379</span>
+  </footer>
+
+  <script>
+    var data = [
+      {"OrderDate":"2021-01-06","Region":"East","Rep":"Jones","Item":"Pencil","Units":95,"UnitCost":1.99,"Total":189.05},
+      {"OrderDate":"2021-01-23","Region":"Central","Rep":"Kivell","Item":"Binder","Units":50,"UnitCost":19.99,"Total":999.50},
+      {"OrderDate":"2021-02-09","Region":"Central","Rep":"Jardine","Item":"Pencil","Units":36,"UnitCost":4.99,"Total":179.64},
+      {"OrderDate":"2021-02-26","Region":"Central","Rep":"Gill","Item":"Pen","Units":27,"UnitCost":19.99,"Total":539.73},
+      {"OrderDate":"2021-03-15","Region":"West","Rep":"Sorvino","Item":"Pencil","Units":56,"UnitCost":2.99,"Total":167.44},
+      {"OrderDate":"2021-04-01","Region":"East","Rep":"Jones","Item":"Binder","Units":60,"UnitCost":4.99,"Total":299.40},
+      {"OrderDate":"2021-04-18","Region":"Central","Rep":"Andrews","Item":"Pencil","Units":75,"UnitCost":1.99,"Total":149.25},
+      {"OrderDate":"2021-05-05","Region":"Central","Rep":"Jardine","Item":"Pencil","Units":90,"UnitCost":4.99,"Total":449.10},
+      {"OrderDate":"2021-05-22","Region":"West","Rep":"Thompson","Item":"Pencil","Units":32,"UnitCost":1.99,"Total":63.68},
+      {"OrderDate":"2021-06-08","Region":"East","Rep":"Jones","Item":"Binder","Units":60,"UnitCost":8.99,"Total":539.40},
+      {"OrderDate":"2021-06-25","Region":"Central","Rep":"Morgan","Item":"Pencil","Units":90,"UnitCost":4.99,"Total":449.10},
+      {"OrderDate":"2021-07-12","Region":"East","Rep":"Howard","Item":"Binder","Units":29,"UnitCost":1.99,"Total":57.71},
+      {"OrderDate":"2021-07-29","Region":"East","Rep":"Parent","Item":"Binder","Units":81,"UnitCost":19.99,"Total":1619.19},
+      {"OrderDate":"2021-08-15","Region":"East","Rep":"Jones","Item":"Pencil","Units":35,"UnitCost":4.99,"Total":174.65},
+      {"OrderDate":"2021-09-01","Region":"Central","Rep":"Smith","Item":"Desk","Units":2,"UnitCost":125.00,"Total":250.00},
+      {"OrderDate":"2021-09-18","Region":"East","Rep":"Jones","Item":"Pen Set","Units":16,"UnitCost":15.99,"Total":255.84},
+      {"OrderDate":"2021-10-05","Region":"Central","Rep":"Morgan","Item":"Binder","Units":28,"UnitCost":8.99,"Total":251.72},
+      {"OrderDate":"2021-10-22","Region":"East","Rep":"Jones","Item":"Pen","Units":64,"UnitCost":8.99,"Total":575.36},
+      {"OrderDate":"2021-11-08","Region":"East","Rep":"Parent","Item":"Pen","Units":15,"UnitCost":19.99,"Total":299.85},
+      {"OrderDate":"2021-11-25","Region":"Central","Rep":"Kivell","Item":"Pen Set","Units":96,"UnitCost":4.99,"Total":479.04},
+      {"OrderDate":"2021-12-12","Region":"Central","Rep":"Smith","Item":"Pencil","Units":67,"UnitCost":1.29,"Total":86.43},
+      {"OrderDate":"2021-12-29","Region":"East","Rep":"Parent","Item":"Pen Set","Units":74,"UnitCost":15.99,"Total":1183.26},
+      {"OrderDate":"2022-01-15","Region":"Central","Rep":"Gill","Item":"Binder","Units":46,"UnitCost":8.99,"Total":413.54},
+      {"OrderDate":"2022-02-01","Region":"Central","Rep":"Smith","Item":"Binder","Units":87,"UnitCost":15.00,"Total":1305.00},
+      {"OrderDate":"2022-02-18","Region":"East","Rep":"Jones","Item":"Binder","Units":4,"UnitCost":4.99,"Total":19.96},
+      {"OrderDate":"2022-03-07","Region":"West","Rep":"Sorvino","Item":"Binder","Units":7,"UnitCost":19.99,"Total":139.93},
+      {"OrderDate":"2022-03-24","Region":"Central","Rep":"Jardine","Item":"Pen Set","Units":50,"UnitCost":4.99,"Total":249.50},
+      {"OrderDate":"2022-04-10","Region":"Central","Rep":"Andrews","Item":"Pencil","Units":66,"UnitCost":1.99,"Total":131.34},
+      {"OrderDate":"2022-04-27","Region":"East","Rep":"Howard","Item":"Pen","Units":96,"UnitCost":4.99,"Total":479.04},
+      {"OrderDate":"2022-05-14","Region":"Central","Rep":"Gill","Item":"Pencil","Units":53,"UnitCost":1.29,"Total":68.37},
+      {"OrderDate":"2022-05-31","Region":"Central","Rep":"Gill","Item":"Binder","Units":80,"UnitCost":8.99,"Total":719.20},
+      {"OrderDate":"2022-06-17","Region":"Central","Rep":"Kivell","Item":"Desk","Units":5,"UnitCost":125.00,"Total":625.00},
+      {"OrderDate":"2022-07-04","Region":"East","Rep":"Jones","Item":"Pen Set","Units":62,"UnitCost":4.99,"Total":309.38},
+      {"OrderDate":"2022-07-21","Region":"Central","Rep":"Morgan","Item":"Pen Set","Units":55,"UnitCost":12.49,"Total":686.95},
+      {"OrderDate":"2022-08-07","Region":"Central","Rep":"Kivell","Item":"Pen Set","Units":42,"UnitCost":23.95,"Total":1005.90},
+      {"OrderDate":"2022-08-24","Region":"West","Rep":"Sorvino","Item":"Desk","Units":3,"UnitCost":275.00,"Total":825.00},
+      {"OrderDate":"2022-09-10","Region":"Central","Rep":"Gill","Item":"Pencil","Units":7,"UnitCost":1.29,"Total":9.03},
+      {"OrderDate":"2022-09-27","Region":"West","Rep":"Sorvino","Item":"Pen","Units":76,"UnitCost":1.99,"Total":151.24},
+      {"OrderDate":"2022-10-14","Region":"West","Rep":"Thompson","Item":"Binder","Units":57,"UnitCost":19.99,"Total":1139.43},
+      {"OrderDate":"2022-10-31","Region":"Central","Rep":"Andrews","Item":"Pencil","Units":14,"UnitCost":1.29,"Total":18.06},
+      {"OrderDate":"2022-11-17","Region":"Central","Rep":"Jardine","Item":"Binder","Units":11,"UnitCost":4.99,"Total":54.89},
+      {"OrderDate":"2022-12-04","Region":"Central","Rep":"Jardine","Item":"Binder","Units":94,"UnitCost":19.99,"Total":1879.06},
+      {"OrderDate":"2022-12-21","Region":"Central","Rep":"Andrews","Item":"Binder","Units":28,"UnitCost":4.99,"Total":139.72}
+    ];
+
+    var embedOpts = {
+      actions: {export: true, source: false, compiled: false, editor: false},
+      renderer: 'svg'
+    };
+
+    /* ── I. Donut ── */
+    var spec1 = {
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "data": {"values": data},
+      "width": 380, "height": 380,
+      "mark": {
+        "type": "arc",
+        "innerRadius": 90,
+        "tooltip": true,
+        "stroke": "#f8f4ef",
+        "strokeWidth": 2
+      },
+      "encoding": {
+        "theta": {"field": "Total", "type": "quantitative", "aggregate": "sum"},
+        "color": {
+        "field": "Rep", 
+        "type": "nominal", 
+        "scale": {"scheme": "tableau10"}, // <--- Change "tableau10" to any other scheme
+        "legend": {"title": "Sales Rep"}
+        },
+        "tooltip": [
+          {"field": "Rep", "type": "nominal", "title": "Representative"},
+          {"field": "Total", "type": "quantitative", "aggregate": "sum", "title": "Total Revenue ($)", "format": ",.2f"}
+        ]
+      },
+      "config": {
+        "font": "Source Sans 3",
+        "view": {"stroke": "transparent"},
+        "legend": {"labelFontSize": 12, "titleFontSize": 12}
+      }
+    };
+
+    /* ── II. Streamgraph ── */
+    var spec2 = {
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "data": {"values": data},
+      "width": 700, "height": 300,
+      "mark": {"type": "area", "interpolate": "monotone", "tooltip": true, "opacity": 0.88},
+      "encoding": {
+        "x": {
+          "field": "OrderDate", "type": "temporal", "timeUnit": "yearmonth",
+          "title": "Month",
+          "axis": {"format": "%b %Y", "labelAngle": -35, "labelFontSize": 11}
+        },
+        "y": {
+          "field": "Total", "type": "quantitative", "aggregate": "sum",
+          "stack": "center", "title": "Revenue ($)",
+          "axis": {"labelFontSize": 11}
+        },
+        "color": {
+          "field": "Item", "type": "nominal",
+          "scale": {"scheme": "category10"},
+          "legend": {"title": "Product", "orient": "right"}
+        },
+        "tooltip": [
+          {"field": "Item", "type": "nominal", "title": "Product"},
+          {"field": "OrderDate", "type": "temporal", "timeUnit": "yearmonth", "title": "Month"},
+          {"field": "Total", "type": "quantitative", "aggregate": "sum", "format": ",.2f", "title": "Revenue ($)"}
+        ]
+      },
+      "config": {"font": "Source Sans 3", "view": {"stroke": "transparent"}}
+    };
+
+    /* ── III. Trellis Histogram ── */
+    var spec3 = {
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "data": {"values": data},
+      "columns": 3,
+      "facet": {"field": "Item", "type": "nominal", "title": "Product Category"},
+      "spec": {
+        "width": 195, "height": 140,
+        "layer": [
+          {
+            "mark": {"type": "bar", "tooltip": true, "cornerRadiusTopLeft": 2, "cornerRadiusTopRight": 2},
+            "encoding": {
+              "x": {
+                "field": "Units", "type": "quantitative",
+                "bin": {"maxbins": 8}, "title": "Units Sold",
+                "axis": {"labelFontSize": 10}
+              },
+              "y": {
+                "aggregate": "count", "type": "quantitative",
+                "title": "Frequency",
+                "axis": {"labelFontSize": 10}
+              },
+              "color": {
+                "field": "Item", "type": "nominal",
+                "scale": {"scheme": "tableau10"}, "legend": null
+              },
+              "tooltip": [
+                {"field": "Units", "type": "quantitative", "bin": true, "title": "Units Range"},
+                {"aggregate": "count", "type": "quantitative", "title": "Count"}
+              ]
+            }
+          },
+          {
+            "mark": {
+              "type": "rule",
+              "color": "#7b3f1e",
+              "strokeWidth": 2,
+              "strokeDash": [5, 4]
+            },
+            "encoding": {
+              "x": {"field": "Units", "type": "quantitative", "aggregate": "mean"},
+              "tooltip": [
+                {"field": "Units", "type": "quantitative", "aggregate": "mean", "title": "Mean Units", "format": ".1f"}
+              ]
+            }
+          }
+        ]
+      },
+      "config": {
+        "font": "Source Sans 3",
+        "view": {"stroke": "#c8bfb4"},
+        "facet": {"spacing": 14}
+      }
+    };
+
+    /* ── IV. Heatmap (custom viz #1) ── */
+    var spec4 = {
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "data": {"values": data},
+      "width": 500, "height": 300,
+      "params": [
+        {"name": "rowHL", "select": {"type": "point", "encodings": ["y"]}}
+      ],
+      "mark": {"type": "rect", "tooltip": true, "stroke": "#f8f4ef", "strokeWidth": 1.5},
+      "encoding": {
+        "x": {
+          "field": "Item", "type": "nominal",
+          "title": "Product",
+          "axis": {"labelFontSize": 12, "titleFontSize": 12}
+        },
+        "y": {
+          "field": "Rep", "type": "nominal",
+          "title": "Sales Representative",
+          "axis": {"labelFontSize": 12, "titleFontSize": 12}
+        },
+        "color": {
+          "field": "Total", "type": "quantitative", "aggregate": "sum",
+          "title": "Revenue ($)",
+          "scale": {"scheme": "warmgreys"},
+          "legend": {"titleFontSize": 11, "labelFontSize": 11}
+        },
+        "opacity": {
+          "condition": {"param": "rowHL", "value": 1},
+          "value": 0.2
+        },
+        "tooltip": [
+          {"field": "Rep", "type": "nominal", "title": "Representative"},
+          {"field": "Item", "type": "nominal", "title": "Product"},
+          {"field": "Total", "type": "quantitative", "aggregate": "sum", "format": ",.2f", "title": "Revenue ($)"},
+          {"field": "Units", "type": "quantitative", "aggregate": "sum", "title": "Units Sold"}
+        ]
+      },
+      "config": {"font": "Source Sans 3", "view": {"stroke": "transparent"}}
+    };
+
+    /* ── V. Linked Brush (custom viz #2) ── */
+    var spec5 = {
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "data": {"values": data},
+      "vconcat": [
+        {
+          "width": 700, "height": 200,
+          "title": {
+            "text": "Monthly Sales Totals by Region  —  drag to select a date window",
+            "fontSize": 12, "fontStyle": "italic", "color": "#7a756f", "anchor": "start"
+          },
+          "params": [{"name": "brush", "select": {"type": "interval", "encodings": ["x"]}}],
+          "mark": {"type": "bar", "tooltip": true, "cornerRadiusTopLeft": 2, "cornerRadiusTopRight": 2},
+          "encoding": {
+            "x": {
+              "field": "OrderDate", "type": "temporal", "timeUnit": "yearmonth",
+              "title": "Month",
+              "axis": {"format": "%b %Y", "labelAngle": -35, "labelFontSize": 11}
+            },
+            "y": {
+              "field": "Total", "type": "quantitative", "aggregate": "sum",
+              "title": "Total Revenue ($)",
+              "axis": {"labelFontSize": 11}
+            },
+            "color": {
+              "field": "Region", "type": "nominal",
+              "scale": {"scheme": "set1"},
+              "legend": {"title": "Region", "orient": "right"}
+            },
+            "tooltip": [
+              {"field": "OrderDate", "type": "temporal", "timeUnit": "yearmonth", "title": "Month"},
+              {"field": "Region", "type": "nominal", "title": "Region"},
+              {"field": "Total", "type": "quantitative", "aggregate": "sum", "format": ",.2f", "title": "Revenue ($)"}
+            ]
+          }
+        },
+        {
+          "width": 700, "height": 180,
+          "title": {
+            "text": "Representative breakdown within the selected window",
+            "fontSize": 12, "fontStyle": "italic", "color": "#7a756f", "anchor": "start"
+          },
+          "transform": [{"filter": {"param": "brush"}}],
+          "mark": {"type": "bar", "tooltip": true, "cornerRadiusTopLeft": 2, "cornerRadiusTopRight": 2},
+          "encoding": {
+            "x": {
+              "field": "Rep", "type": "nominal", "sort": "-y",
+              "title": "Sales Representative",
+              "axis": {"labelFontSize": 12}
+            },
+            "y": {
+              "field": "Total", "type": "quantitative", "aggregate": "sum",
+              "title": "Revenue ($)",
+              "axis": {"labelFontSize": 11}
+            },
+            "color": {
+              "field": "Rep", "type": "nominal",
+              "scale": {"scheme": "tableau10"}, "legend": null
+            },
+            "tooltip": [
+              {"field": "Rep", "type": "nominal", "title": "Representative"},
+              {"field": "Total", "type": "quantitative", "aggregate": "sum", "format": ",.2f", "title": "Revenue ($)"}
+            ]
+          }
+        }
+      ],
+      "config": {
+        "font": "Source Sans 3",
+        "view": {"stroke": "transparent"},
+        "concat": {"spacing": 20}
+      }
+    };
+
+    /* ── All Views (multiview) ── */
+    var specAll = {
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "title": {
+        "text": "Sales Orders Analysis — HW_III Data · Multiview",
+        "fontSize": 16, "anchor": "middle",
+        "font": "EB Garamond", "fontWeight": "bold"
+      },
+      "data": {"values": data},
+      "vconcat": [
+        spec1,
+        spec2,
+        {
+          "data": {"values": data},
+          "columns": 3,
+          "facet": {"field": "Item", "type": "nominal", "title": "Product Category"},
+          "spec": spec3.spec,
+          "config": spec3.config
+        },
+        spec4,
+        spec5
+      ],
+      "config": {
+        "font": "Source Sans 3",
+        "title": {"fontSize": 13, "fontWeight": "bold"},
+        "view": {"stroke": "transparent"},
+        "concat": {"spacing": 44}
+      }
+    };
+
+    vegaEmbed('#vis1', spec1, embedOpts);
+    vegaEmbed('#vis2', spec2, embedOpts);
+    vegaEmbed('#vis3', spec3, embedOpts);
+    vegaEmbed('#vis4', spec4, embedOpts);
+    vegaEmbed('#vis5', spec5, embedOpts);
+    vegaEmbed('#visAll', specAll, embedOpts).catch(function(e) {
+      document.getElementById('visAll').innerHTML =
+        '<pre style="color:#7b3f1e;padding:1rem;">' + e + '</pre>';
+    });
+  </script>
+
+</body>
+</html>
